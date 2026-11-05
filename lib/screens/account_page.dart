@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'app_widgets.dart';
+import '../models/sample_data.dart';
+import '../services/supabase_service.dart';
+import '../widgets/app_widgets.dart';
 import 'login_page.dart';
 import 'register_page.dart';
-import 'sample_data.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -17,6 +18,23 @@ class AccountPage extends StatelessWidget {
           child: ValueListenableBuilder<bool>(
             valueListenable: isSignedInNotifier,
             builder: (context, isSignedIn, _) {
+              final user = SupabaseService.currentUser;
+              final email = user?.email ?? 'pengguna@findr.id';
+              final name = user?.userMetadata?['full_name'] as String? ??
+                  (user != null ? email.split('@').first : 'Pengguna Findr');
+              final initials = name.trim().isNotEmpty
+                  ? name
+                      .trim()
+                      .split(' ')
+                      .map((w) => w.isNotEmpty ? w[0] : '')
+                      .take(2)
+                      .join()
+                      .toUpperCase()
+                  : 'U';
+              final phone = (user?.userMetadata?['phone'] as String?)?.isNotEmpty == true
+                  ? user!.userMetadata!['phone'] as String
+                  : 'Belum ditambahkan';
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -38,7 +56,7 @@ class AccountPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isSignedIn ? 'IM' : '?',
+                          isSignedIn ? initials : '?',
                           style: const TextStyle(
                             fontSize: 42,
                             fontWeight: FontWeight.w900,
@@ -47,7 +65,7 @@ class AccountPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          isSignedIn ? 'Imam Dzulvan Muffid' : 'Halo, teman findr!',
+                          isSignedIn ? name : 'Halo, teman findr!',
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
@@ -75,11 +93,11 @@ class AccountPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildAccountInfo('Email', 'muffid515@gmail.com'),
+                          _buildAccountInfo('Email', email),
                           const SizedBox(height: 14),
                           const Divider(color: AppColors.cream, height: 1),
                           const SizedBox(height: 14),
-                          _buildAccountInfo('Nomor HP', 'Belum ditambahkan'),
+                          _buildAccountInfo('Nomor HP', phone),
                         ],
                       ),
                     ),
@@ -95,6 +113,7 @@ class AccountPage extends StatelessWidget {
                           content: 'Kamu tetap bisa menjelajahi barang setelah keluar.',
                         );
                         if (confirmed == true) {
+                          await SupabaseService.signOut();
                           isSignedInNotifier.value = false;
                           if (context.mounted) {
                             Navigator.of(context).pushAndRemoveUntil(
@@ -139,17 +158,6 @@ class AccountPage extends StatelessWidget {
                       ),
                     ),
                   ],
-
-                  const SizedBox(height: 32),
-                  const Center(
-                    child: Text(
-                      'findr  /  Temukan. Laporkan. Kembalikan.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.muted,
-                      ),
-                    ),
-                  ),
                 ],
               );
             },
@@ -166,17 +174,18 @@ class AccountPage extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 12,
             color: AppColors.muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 4),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
             color: AppColors.ink,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],

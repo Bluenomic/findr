@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'app_widgets.dart';
+import '../models/sample_data.dart';
+import '../widgets/app_widgets.dart';
 import 'claim_page.dart';
 import 'incoming_claims_page.dart';
 import 'login_page.dart';
-import 'sample_data.dart';
 
 class DetailPage extends StatelessWidget {
   final Item item;
@@ -50,12 +50,9 @@ class DetailPage extends StatelessWidget {
                   height: 320,
                   width: double.infinity,
                   color: AppColors.photoBg,
-                  child: Image.asset(
-                    item.photo,
+                  child: ItemPhotoWidget(
+                    photo: item.photo,
                     fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const Center(
-                      child: Icon(Icons.broken_image, size: 48, color: AppColors.muted),
-                    ),
                   ),
                 ),
               ),
@@ -252,31 +249,31 @@ class DetailPage extends StatelessWidget {
                       );
                     } else {
                       return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Text(
-                              'Informasi kontak tersedia setelah masuk.',
-                              style: TextStyle(
-                                color: AppColors.muted,
-                                fontSize: 14,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                'Informasi kontak tersedia setelah masuk.',
+                                style: TextStyle(
+                                  color: AppColors.muted,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          AppPrimaryButton(
-                            label: 'Masuk untuk melihat kontak',
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const LoginPage(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      );
+                            const SizedBox(height: 8),
+                            AppPrimaryButton(
+                              label: 'Masuk untuk melihat kontak',
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginPage(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        );
                     }
                   },
                 ),

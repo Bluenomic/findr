@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
-import 'login_page.dart';
-import 'sample_data.dart';
+import 'config/supabase_config.dart';
+import 'models/sample_data.dart';
+import 'screens/login_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SupabaseConfig.initialize();
   runApp(const MyApp());
 }
 

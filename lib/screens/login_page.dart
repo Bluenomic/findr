@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../config/supabase_config.dart';
+import '../models/sample_data.dart';
+import '../services/supabase_service.dart';
 import 'main_navigation_page.dart';
 import 'register_page.dart';
-import 'sample_data.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,6 +23,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _passwordVisible = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -59,20 +62,36 @@ class _LoginPageState extends State<LoginPage> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    isSignedInNotifier.value = true;
-    _showMessage('Berhasil masuk.');
+    setState(() => _isLoading = true);
 
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const MainNavigationPage(),
-        ),
-      );
+    try {
+      if (SupabaseConfig.isInitialized) {
+        await SupabaseService.signIn(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+      }
+      isSignedInNotifier.value = true;
+      _showMessage('Berhasil masuk.');
+
+      if (mounted) {
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => const MainNavigationPage(),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      _showMessage('Gagal masuk: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -186,7 +205,7 @@ class _LoginPageState extends State<LoginPage> {
                           SizedBox(
                             height: 53,
                             child: FilledButton(
-                              onPressed: _submit,
+                              onPressed: _isLoading ? () {} : _submit,
                               style: FilledButton.styleFrom(
                                 backgroundColor: _buttonGreen,
                                 foregroundColor: Colors.white,
@@ -194,13 +213,22 @@ class _LoginPageState extends State<LoginPage> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text(
-                                'Masuk',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Masuk',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                             ),
                           ),
                         ],

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'app_widgets.dart';
+import '../config/supabase_config.dart';
+import '../models/sample_data.dart';
+import '../services/supabase_service.dart';
+import '../widgets/app_widgets.dart';
 import 'login_page.dart';
 import 'main_navigation_page.dart';
-import 'sample_data.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -21,6 +23,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool _passwordVisible = false;
   bool _confirmPasswordVisible = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -60,22 +63,44 @@ class _RegisterPageState extends State<RegisterPage> {
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    isSignedInNotifier.value = true;
-    await showAppNoticeDialog(
-      context: context,
-      message:
-          'Ini pratinjau akun dengan data contoh. Autentikasi belum dihubungkan.',
-    );
-    if (mounted) {
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => const MainNavigationPage(initialIndex: 3),
-          ),
+    setState(() => _isLoading = true);
+
+    try {
+      if (SupabaseConfig.isInitialized) {
+        await SupabaseService.signUp(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          fullName: _nameController.text.trim(),
+          phone: _phoneController.text.trim(),
         );
       }
+      isSignedInNotifier.value = true;
+      if (mounted) {
+        await showAppNoticeDialog(
+          context: context,
+          message: 'Akun berhasil dibuat. Selamat datang di findr!',
+        );
+        if (mounted) {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => const MainNavigationPage(initialIndex: 3),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        await showAppNoticeDialog(
+          context: context,
+          message: 'Pendaftaran gagal: $e',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -202,8 +227,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 24),
 
                     AppPrimaryButton(
-                      label: 'Daftar akun',
-                      onPressed: _submit,
+                      label: _isLoading ? 'Mendaftarkan…' : 'Daftar akun',
+                      onPressed: _isLoading ? () {} : _submit,
                     ),
                     const SizedBox(height: 14),
 

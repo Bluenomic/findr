@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import '../models/sample_data.dart';
 import 'account_page.dart';
 import 'claims_page.dart';
 import 'home_page.dart';
 import 'reports_page.dart';
-import 'sample_data.dart';
 
 class MainNavigationPage extends StatefulWidget {
   final int initialIndex;

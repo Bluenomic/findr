@@ -1,5 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'sample_data.dart';
+import '../models/sample_data.dart';
 
 class AppHeading extends StatelessWidget {
   final String title;
@@ -100,37 +101,29 @@ class AppPanel extends StatelessWidget {
 class AppPrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback onPressed;
-  final Color backgroundColor;
-  final Color foregroundColor;
 
   const AppPrimaryButton({
     super.key,
     required this.label,
     required this.onPressed,
-    this.backgroundColor = AppColors.green,
-    this.foregroundColor = Colors.white,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: double.infinity,
       height: 52,
       child: FilledButton(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: backgroundColor,
-          foregroundColor: foregroundColor,
+          backgroundColor: AppColors.green,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -148,28 +141,28 @@ class AppOutlinedButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.textColor = AppColors.green,
-    this.borderColor = const Color(0xFFD6DDD2),
+    this.borderColor = AppColors.green,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: double.infinity,
-      height: 50,
+      height: 52,
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          side: BorderSide(color: borderColor),
+          foregroundColor: textColor,
+          side: BorderSide(color: borderColor, width: 1.5),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: textColor,
             fontSize: 15,
             fontWeight: FontWeight.w700,
+            color: textColor,
           ),
         ),
       ),
@@ -177,11 +170,143 @@ class AppOutlinedButton extends StatelessWidget {
   }
 }
 
-class ItemFeedCard extends StatelessWidget {
+class EmptyState extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const EmptyState({
+    super.key,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE8ECE5)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: AppColors.photoBg,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.search_off_rounded,
+              size: 36,
+              color: AppColors.muted,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.muted,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ItemPhotoWidget extends StatelessWidget {
+  final String photo;
+  final BoxFit fit;
+  final double? width;
+  final double? height;
+
+  const ItemPhotoWidget({
+    super.key,
+    required this.photo,
+    this.fit = BoxFit.cover,
+    this.width,
+    this.height,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (photo.isEmpty) {
+      return Container(
+        width: width,
+        height: height,
+        color: AppColors.photoBg,
+        child: const Center(
+          child: Icon(Icons.inventory_2_outlined, color: AppColors.muted, size: 28),
+        ),
+      );
+    }
+
+    if (photo.startsWith('http://') || photo.startsWith('https://')) {
+      return CachedNetworkImage(
+        imageUrl: photo,
+        width: width,
+        height: height,
+        fit: fit,
+        placeholder: (_, _) => Container(
+          width: width,
+          height: height,
+          color: AppColors.photoBg,
+          child: const Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.green),
+            ),
+          ),
+        ),
+        errorWidget: (_, _, _) => Container(
+          width: width,
+          height: height,
+          color: AppColors.photoBg,
+          child: const Center(
+            child: Icon(Icons.broken_image_rounded, color: AppColors.muted, size: 28),
+          ),
+        ),
+      );
+    }
+
+    return Image.asset(
+      photo,
+      width: width,
+      height: height,
+      fit: fit,
+      errorBuilder: (_, _, _) => Container(
+        width: width,
+        height: height,
+        color: AppColors.photoBg,
+        child: const Center(
+          child: Icon(Icons.inventory_2_outlined, color: AppColors.muted, size: 28),
+        ),
+      ),
+    );
+  }
+}
+
+class ItemCard extends StatelessWidget {
   final Item item;
   final VoidCallback onTap;
 
-  const ItemFeedCard({
+  const ItemCard({
     super.key,
     required this.item,
     required this.onTap,
@@ -192,7 +317,6 @@ class ItemFeedCard extends StatelessWidget {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(18),
-      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
@@ -208,15 +332,9 @@ class ItemFeedCard extends StatelessWidget {
                 children: [
                   AspectRatio(
                     aspectRatio: 0.95,
-                    child: Container(
-                      color: AppColors.photoBg,
-                      child: Image.asset(
-                        item.photo,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const Center(
-                          child: Icon(Icons.broken_image, color: AppColors.muted),
-                        ),
-                      ),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(17)),
+                      child: ItemPhotoWidget(photo: item.photo, fit: BoxFit.cover),
                     ),
                   ),
                   Positioned(
@@ -299,6 +417,8 @@ class ItemFeedCard extends StatelessWidget {
   }
 }
 
+typedef ItemFeedCard = ItemCard;
+
 class ItemRowCard extends StatelessWidget {
   final Item item;
   final VoidCallback onTap;
@@ -330,14 +450,7 @@ class ItemRowCard extends StatelessWidget {
                 child: SizedBox(
                   width: 78,
                   height: 78,
-                  child: Image.asset(
-                    item.photo,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                      color: AppColors.photoBg,
-                      child: const Icon(Icons.broken_image, color: AppColors.muted),
-                    ),
-                  ),
+                  child: ItemPhotoWidget(photo: item.photo, fit: BoxFit.cover),
                 ),
               ),
               const SizedBox(width: 14),

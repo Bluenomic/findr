@@ -1,19 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:findr/claim_page.dart';
-import 'package:findr/create_report_page.dart';
-import 'package:findr/detail_page.dart';
-import 'package:findr/incoming_claims_page.dart';
-import 'package:findr/login_page.dart';
 import 'package:findr/main.dart';
-import 'package:findr/main_navigation_page.dart';
-import 'package:findr/register_page.dart';
-import 'package:findr/sample_data.dart';
+import 'package:findr/models/sample_data.dart';
+import 'package:findr/screens/claim_page.dart';
+import 'package:findr/screens/create_report_page.dart';
+import 'package:findr/screens/detail_page.dart';
+import 'package:findr/screens/incoming_claims_page.dart';
+import 'package:findr/screens/login_page.dart';
+import 'package:findr/screens/main_navigation_page.dart';
+import 'package:findr/screens/register_page.dart';
 
 void main() {
   setUp(() {
     isSignedInNotifier.value = true;
+    sampleItems.clear();
+    sampleItems.addAll([
+      const Item(
+        title: 'Dompet kulit cokelat',
+        category: 'Dompet',
+        location: 'Jalan Jenderal Sudirman',
+        found: true,
+        photo: 'assets/images/sample_wallet.webp',
+        description: 'Dompet lipat Fossil berwarna cokelat dengan jahitan di tepinya.',
+        city: 'Balikpapan',
+      ),
+      const Item(
+        title: 'Headphone wireless',
+        category: 'Elektronik',
+        location: 'Jalan Ahmad Yani',
+        found: false,
+        photo: 'assets/images/sample_headphone.jpg',
+        description: 'Headphone wireless biru dengan bantalan telinga empuk.',
+        city: 'Balikpapan',
+      ),
+      const Item(
+        title: 'Kunci motor Honda',
+        category: 'Kunci',
+        location: 'Area parkir Sepinggan',
+        found: true,
+        photo: 'assets/images/sample_key.jpg',
+        description: 'Kunci Honda dengan gantungan karabiner hitam.',
+        city: 'Balikpapan',
+      ),
+      const Item(
+        title: 'Tumbler hijau',
+        category: 'Lainnya',
+        location: 'Kafe di kawasan Klandasan',
+        found: false,
+        photo: 'assets/images/sample_tumbler.jpg',
+        description: 'Botol AquaFlask hijau dengan pegangan dan tali hitam.',
+        city: 'Balikpapan',
+      ),
+    ]);
   });
 
   testWidgets('App launches with LoginPage as starting point and logs into MainNavigationPage', (
@@ -59,7 +98,7 @@ void main() {
     await tester.tap(find.text('Akun'));
     await tester.pumpAndSettle();
     expect(find.text('Ruang pribadi'), findsOneWidget);
-    expect(find.text('Imam Dzulvan Muffid'), findsOneWidget);
+    expect(find.text('Pengguna Findr'), findsOneWidget);
   });
 
   testWidgets('LoginPage can explore as guest without logging in', (
@@ -165,7 +204,7 @@ void main() {
     expect(find.byType(DetailPage), findsOneWidget);
   });
 
-  testWidgets('CreateReportPage opens, fills form, and shows notice dialog', (
+  testWidgets('CreateReportPage opens, fills form, and submits report', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -178,12 +217,8 @@ void main() {
     expect(find.text('Buat laporan'), findsOneWidget);
     expect(find.text('Ceritakan barangnya'), findsOneWidget);
 
-    // Tap photo upload placeholder
-    await tester.tap(find.text('Tambahkan foto barang'));
-    await tester.pumpAndSettle();
-    expect(find.text('Pratinjau findr'), findsOneWidget);
-    await tester.tap(find.text('Mengerti'));
-    await tester.pumpAndSettle();
+    // Fill title
+    await tester.enterText(find.byType(TextField).at(0), 'Barang Baru');
 
     // Select category 'Elektronik'
     await tester.tap(find.text('Elektronik'));
@@ -193,16 +228,6 @@ void main() {
     final kirimLaporanFinder = find.text('Kirim laporan');
     await tester.ensureVisible(kirimLaporanFinder);
     await tester.tap(kirimLaporanFinder);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Pratinjau findr'), findsOneWidget);
-    expect(
-      find.text(
-        'Tampilan laporan selesai dicoba. Pengiriman dan penyimpanan akan tersedia pada tahap berikutnya.',
-      ),
-      findsOneWidget,
-    );
-    await tester.tap(find.text('Mengerti'));
     await tester.pumpAndSettle();
   });
 
@@ -441,7 +466,7 @@ void main() {
     await tester.tap(submitBtn);
     await tester.pumpAndSettle();
 
-    expect(find.text('Pratinjau findr'), findsOneWidget);
+    expect(find.text('Akun berhasil dibuat. Selamat datang di findr!'), findsOneWidget);
     await tester.tap(find.text('Mengerti'));
     await tester.pumpAndSettle();
 

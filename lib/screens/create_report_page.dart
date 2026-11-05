@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'app_widgets.dart';
-import 'sample_data.dart';
+import 'package:image_picker/image_picker.dart';
+import '../config/supabase_config.dart';
+import '../models/sample_data.dart';
+import '../services/supabase_service.dart';
+import '../widgets/app_widgets.dart';
 
 class CreateReportPage extends StatefulWidget {
   const CreateReportPage({super.key});
@@ -12,6 +16,8 @@ class CreateReportPage extends StatefulWidget {
 class _CreateReportPageState extends State<CreateReportPage> {
   String _type = 'Hilang'; // 'Hilang' or 'Ditemukan'
   String _category = 'Dompet'; // 'Dompet', 'Elektronik', 'Kunci', 'Lainnya'
+  File? _selectedImage;
+  bool _isSubmitting = false;
 
   final _titleController = TextEditingController();
   final _cityController = TextEditingController(text: 'Balikpapan');
@@ -50,6 +56,115 @@ class _CreateReportPageState extends State<CreateReportPage> {
         borderSide: const BorderSide(color: AppColors.green, width: 2),
       ),
     );
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined, color: AppColors.green),
+              title: const Text('Ambil foto dengan kamera'),
+              onTap: () => Navigator.of(ctx).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: AppColors.green),
+              title: const Text('Pilih dari galeri'),
+              onTap: () => Navigator.of(ctx).pop(ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+    try {
+      final picked = await picker.pickImage(source: source, imageQuality: 85);
+      if (picked != null) {
+        setState(() {
+          _selectedImage = File(picked.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memilih gambar: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _submit() async {
+    final title = _titleController.text.trim();
+    final city = _cityController.text.trim();
+    final location = _locationController.text.trim();
+    final description = _descriptionController.text.trim();
+
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nama barang wajib diisi')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      String? photoUrl;
+      if (_selectedImage != null && SupabaseConfig.isInitialized) {
+        photoUrl = await SupabaseService.uploadPhoto(_selectedImage!);
+      }
+
+      if (SupabaseConfig.isInitialized) {
+        await SupabaseService.createItem(
+          title: title,
+          category: _category,
+          city: city.isNotEmpty ? city : 'Balikpapan',
+          location: location.isNotEmpty ? location : '-',
+          description: description,
+          isFound: _type == 'Ditemukan',
+          photoUrl: photoUrl,
+        );
+      }
+
+      sampleItems.insert(
+        0,
+        Item(
+          title: title,
+          category: _category,
+          city: city.isNotEmpty ? city : 'Balikpapan',
+          location: location.isNotEmpty ? location : '-',
+          description: description,
+          found: _type == 'Ditemukan',
+          photo: photoUrl ?? (_selectedImage?.path ?? ''),
+        ),
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Laporan berhasil dikirim!')),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        showAppNoticeDialog(
+          context: context,
+          message: 'Gagal mengirim laporan: $e',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -122,50 +237,72 @@ class _CreateReportPageState extends State<CreateReportPage> {
               const SizedBox(height: 16),
 
               // Upload Photo Placeholder
-              Material(
-                color: const Color(0xFFE8EEE3),
+              ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(20),
-                  onTap: () {
-                    showAppNoticeDialog(
-                      context: context,
-                      message:
-                          'Pilihan kamera dan galeri akan tersedia pada tahap berikutnya.',
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 28),
-                    alignment: Alignment.center,
-                    child: const Column(
-                      children: [
-                        Text(
-                          '+',
-                          style: TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w300,
-                            color: AppColors.green,
+                child: Material(
+                  color: const Color(0xFFE8EEE3),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: _pickImage,
+                    child: _selectedImage != null
+                        ? Stack(
+                            alignment: Alignment.topRight,
+                            children: [
+                              Image.file(
+                                _selectedImage!,
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: CircleAvatar(
+                                  backgroundColor: Colors.black54,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedImage = null;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Container(
+                            padding: const EdgeInsets.symmetric(vertical: 28),
+                            alignment: Alignment.center,
+                            child: const Column(
+                              children: [
+                                Text(
+                                  '+',
+                                  style: TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.w300,
+                                    color: AppColors.green,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Tambahkan foto barang',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Gunakan foto yang terang dan jelas',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.muted,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Tambahkan foto barang',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Gunakan foto yang terang dan jelas',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
               ),
@@ -252,17 +389,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
               // Submit Button
               AppPrimaryButton(
-                label: 'Kirim laporan',
-                onPressed: () async {
-                  await showAppNoticeDialog(
-                    context: context,
-                    message:
-                        'Tampilan laporan selesai dicoba. Pengiriman dan penyimpanan akan tersedia pada tahap berikutnya.',
-                  );
-                  if (context.mounted) {
-                    Navigator.of(context).pop();
-                  }
-                },
+                label: _isSubmitting ? 'Mengirim…' : 'Kirim laporan',
+                onPressed: _isSubmitting ? () {} : _submit,
               ),
             ],
           ),

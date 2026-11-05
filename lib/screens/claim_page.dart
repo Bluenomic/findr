@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'app_widgets.dart';
-import 'sample_data.dart';
+import '../models/sample_data.dart';
+import '../widgets/app_widgets.dart';
 
 class ClaimPage extends StatefulWidget {
   final Item item;
